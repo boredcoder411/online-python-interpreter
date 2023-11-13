@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupyter Notebook Console</title>
+    <style>
+      body {
+        font-family: "Courier New", monospace;
+        background-color: #1a1a1a;
+        color: #ffffff;
+        margin: 0;
+        padding: 20px;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      li {
+        background-color: #2d2d2d;
+        border: 1px solid #555;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .input {
+        color: #ffffff;
+      }
+
+      .output {
+        color: #ffffff;
+        margin-top: 10px;
+      }
+
+      .prompt {
+        color: #ccc;
+        font-weight: bold;
+        margin-right: 5px;
+      }
+
+      .new-cell-button {
+        background-color: #00bfff;
+        color: #ffffff;
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .delete-cell-button {
+        background-color: #ff4444;
+        color: #ffffff;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+
+      .cell-input {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+      }
+
+      .cell-input textarea {
+        flex: 1;
+        padding: 5px;
+        border: 1px solid #555;
+        border-radius: 3px;
+        margin-bottom: 5px;
+        background-color: #2d2d2d;
+        color: #ffffff;
+      }
+
+      .cell-input button {
+        background-color: #00bfff;
+        color: #ffffff;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-right: 5px;
+        margin-left: 5px;
+      }
+
+      .cell-input textarea {
+        flex: 1;
+        padding: 5px;
+        border: 1px solid #555;
+        border-radius: 3px;
+        margin-bottom: 5px;
+        background-color: #2d2d2d;
+        color: #ffffff;
+        height: auto; /* Set initial height to auto */
+        resize: none; /* Disable textarea resize handle */
+      }
+    </style>
+  </head>
+  <body>
+    <ul id="notebook-list"></ul>
+
+    <button class="new-cell-button" onclick="addNewCell()">New Cell</button>
+
+    <script>
+      let cellCounter = 0; // Initialize counter for existing cells
+
+      function addNewCell() {
+        const notebookList = document.getElementById("notebook-list");
+        const newCell = document.createElement("li");
+
+        cellCounter++;
+        newCell.innerHTML = `
+                <div class="cell-input">
+                    <span class="prompt">In [${cellCounter}]:</span> 
+                    <textarea></textarea>
+                    <button onclick="runCode(this, ${cellCounter})">Run</button>
+                    <button onclick="deleteCell(this)">Delete</button>
+                </div>
+                <div id="output${cellCounter}" class="output">
+                    <!-- Output will be here -->
+                </div>
+            `;
+
+        notebookList.appendChild(newCell);
+      }
+
+      async function runCode(button, counter) {
+        const inputField = button.previousElementSibling;
+        const code = inputField.value;
+        const outputDiv = document.getElementById(`output${counter}`);
+
+        try {
+          const response = await fetch("/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code, cellId: `output${counter}` }),
+          });
+
+          if (response.ok) {
+            const responseData = await response.json();
+            outputDiv.textContent = `Output: ${responseData.output}`;
+          } else {
+            outputDiv.textContent = "Error fetching data from the server.";
+          }
+        } catch (error) {
+          outputDiv.textContent = "Error connecting to the server.";
+        }
+      }
+
+      function deleteCell(button) {
+        cellCounter--;
+        const li = button.closest("li");
+        li.remove();
+      }
+
+      function adjustTextareaHeight(textarea) {
+        textarea.style.height = "auto";
+        textarea.style.height = textarea.scrollHeight + "px";
+      }
+
+      document.addEventListener("input", function (event) {
+        if (event.target.tagName.toLowerCase() === "textarea") {
+          adjustTextareaHeight(event.target);
+        }
+      });
+    </script>
+  </body>
+</html>
